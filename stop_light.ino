@@ -36,7 +36,7 @@
 #define ON   HIGH
 int modes = 3;
 int state = 1;
-int nexttime;
+int nexttime = 1;
 int blinkYellow = ON;
 int blinkRed = ON;
 int RandomLightTiming = 1;
@@ -53,52 +53,62 @@ long debounceDelay = 50;    // the debounce time; increase if the output flicker
 
 void setup()
 {
-  Serial.begin(115200);
-  pinMode(red_1,OUTPUT);
-  pinMode(yellow_1,OUTPUT);
-  pinMode(green_1,OUTPUT);
-  pinMode(switchPin, INPUT);
-  
-  nexttime = 1;
-  InitializeMode();
-  randomSeed(analogRead(0));
+    //Setup serial communication
+    Serial.begin(115200);
+
+    //Initialize pin modes
+    pinMode(red_1,OUTPUT);
+    pinMode(yellow_1,OUTPUT);
+    pinMode(green_1,OUTPUT);
+    pinMode(switchPin, INPUT);
+
+    //Call initialization mode
+    InitializeMode();
+
+    //Seed the random number generator
+    randomSeed(analogRead(0));
 }
 
 void loop()
 {
-  delay(1000);
-  
-  Serial.println(state);
-  Serial.print("mode ");
-  Serial.println(modes);
-  
-  // read the state of the switch into a local variable:
-  int reading = digitalRead(switchPin);
+    //Default delay is 1 second - nexttime and delayCounter use this delay to time the lights 
+    delay(1000);
 
-  // check to see if you just pressed the button
-  // (i.e. the input went from LOW to HIGH),  and you've waited
-  // long enough since the last press to ignore any noise:  
-
-  // If the switch changed, due to noise or pressing:
-  if (reading != lastButtonState) {
-    // reset the debouncing timer
-    lastDebounceTime = millis();
-  }
- 
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    // whatever the reading is at, it's been there for longer
-    // than the debounce delay, so take it as the actual current state:
-    buttonState = reading;
-  }
- 
-  // save the reading.  Next time through the loop,
-  // it'll be the lastButtonState:
-  lastButtonState = reading;
+    //Report current state and mode every second
+    Serial.println(state);
+    Serial.print("mode ");
+    Serial.println(modes);
   
-  if (buttonState == 1 and lastButtonState == 0) {
-    SwitchMode();
-  }
-  if (delayCounter >= nexttime) {
+    // read the state of the switch into a local variable:
+    int reading = digitalRead(switchPin);
+
+    // check to see if you just pressed the button
+    // (i.e. the input went from LOW to HIGH),  and you've waited
+    // long enough since the last press to ignore any noise:  
+
+    // If the switch changed, due to noise or pressing:
+    if (reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+    }
+ 
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+        // whatever the reading is at, it's been there for longer
+        // than the debounce delay, so take it as the actual current state:
+        buttonState = reading;
+    }
+ 
+    // save the reading.  Next time through the loop,
+    // it'll be the lastButtonState:
+    lastButtonState = reading;
+  
+    // Check to see if the button has made a transition
+    if (buttonState == 1 and lastButtonState == 0) {
+        SwitchMode();
+    }
+
+    //Determines what mode the controller is in
+    if (delayCounter >= nexttime) {
       delayCounter = 0;
       switch(modes) {
          case STOPLIGHT_MODE: // regular stop light mode
@@ -115,113 +125,111 @@ void loop()
     	     break;
        }
   } else {
+    // Count up the delayCounter if the light hasn't been on for nexttime seconds
     delayCounter = delayCounter + 1;
   }
   
 }
 
+// regular stop light mode
 void StopLightMode()
 {
-  switch (state) {
-    case INACTIVE_STATE : // inactive state, all off
-		 SetLights(OFF,OFF,OFF);
-
-		 nexttime = 3;
-		 state = RED_STATE;
-		 break;
-    case RED_STATE : // red
-		 SetLights(ON,OFF,OFF);
-		
-		 // goon after yellow to green time
-		 nexttime = RedTime;
-		 state = GREEN_STATE;
-		 break;
-    case GREEN_STATE : // green
-		 // switch walker lights to green
-		 SetLights(OFF,OFF,ON);
-
-		 // wait for green time 1 minus time to switch
-		 // walkers light to red
-		 nexttime = GreenTime;
-		 state = YELLOW_STATE;
-		 break;
-    case YELLOW_STATE : // yellow
-		 SetLights(OFF,ON,OFF);
-
-		 // wait for walkers to leave the street
-		 nexttime = YellowTime;
-		 state = RED_STATE;
-		 break;
-    case ALL_ON_STATE: // initialize all on
-         SetLights(ON,ON,ON);
-         nexttime = 2;
-         state = 0;
-         break;
-  }
-}
-
-void BlinkRedMode()
-{
-	if(blinkRed == ON) {
-	    SetLights(ON,OFF,OFF);
-  	    blinkRed = OFF;
-	} else {
-            SetLights(OFF,OFF,OFF);
-            blinkRed = ON;
-	}
-	nexttime = 1;
-}
-
-void BlinkYellowMode()
-{
-        if(blinkYellow == ON) {
-	    SetLights(OFF,ON,OFF);
-  	    blinkYellow = OFF;
-	} else {
-            SetLights(OFF,OFF,OFF);
-            blinkYellow = ON;
-	}
-	nexttime = 1;
-}
-
-void RandomMode ()
-{
-  RandomLightTiming = random(1,4);
-  RandomState = random(1,8);
-
-	//nothing yet
     switch (state) {
         case INACTIVE_STATE : // inactive state, all off
-	    SetLights(OFF,OFF,OFF);
-
-	    nexttime = RandomLightTiming;
-            state = RandomState;
-	    break;
+            SetLights(OFF,OFF,OFF);
+            nexttime = 3;
+            state = RED_STATE;
+            break;
         case RED_STATE : // red
             SetLights(ON,OFF,OFF);
-		
+
             // goon after yellow to green time
-            nexttime = RandomLightTiming;
-            state = RandomState;
-	    break;
+            nexttime = RedTime;
+            state = GREEN_STATE;
+            break;
         case GREEN_STATE : // green
             // switch walker lights to green
             SetLights(OFF,OFF,ON);
 
-            // wait for green time 1 minus time to switch
-            // walkers light to red
-            nexttime = RandomLightTiming;
-            state = RandomState;
-	    break;
+            nexttime = GreenTime;
+            state = YELLOW_STATE;
+            break;
         case YELLOW_STATE : // yellow
-	    SetLights(OFF,ON,OFF);
-
-            // wait for walkers to leave the street
-	    nexttime = RandomLightTiming;
-            state = RandomState;
-	    break;
+            SetLights(OFF,ON,OFF);
+            
+            nexttime = YellowTime;
+            state = RED_STATE;
+            break;
         case ALL_ON_STATE: // initialize all on
             SetLights(ON,ON,ON);
+            nexttime = 2;
+            state = INACTIVE_STATE;
+            break;
+  }
+}
+
+//Blink red mode
+void BlinkRedMode()
+{
+    if(blinkRed == ON) {
+        SetLights(ON,OFF,OFF);
+  	    blinkRed = OFF;
+	} else {
+        SetLights(OFF,OFF,OFF);
+        blinkRed = ON;
+	}
+	nexttime = 1;
+}
+
+//Blink yellow mode
+void BlinkYellowMode()
+{
+    if(blinkYellow == ON) {
+        SetLights(OFF,ON,OFF);
+        blinkYellow = OFF;
+    } else {
+        SetLights(OFF,OFF,OFF);
+        blinkYellow = ON;
+    }
+    nexttime = 1;
+}
+
+//Randomly turns on and off lights in pseudo random sequence
+void RandomMode ()
+{
+    //Random light timing
+    RandomLightTiming = random(1,4);
+    //Randomize the next state
+    RandomState = random(1,8);
+
+    switch (state) {
+        case INACTIVE_STATE : // inactive state, all off
+            SetLights(OFF,OFF,OFF);
+            nexttime = RandomLightTiming;
+            state = RandomState;
+            break;
+        case RED_STATE : // red
+            SetLights(ON,OFF,OFF);
+
+            nexttime = RandomLightTiming;
+            state = RandomState;
+            break;
+        case GREEN_STATE : // green
+            // switch walker lights to green
+            SetLights(OFF,OFF,ON);
+            
+            nexttime = RandomLightTiming;
+            state = RandomState;
+            break;
+        case YELLOW_STATE : // yellow
+            SetLights(OFF,ON,OFF);
+
+            nexttime = RandomLightTiming;
+            state = RandomState;
+            break;
+        case ALL_ON_STATE: // initialize all on
+            SetLights(ON,ON,ON);
+            
             nexttime = RandomLightTiming;
             state = RandomState;
             break;
@@ -243,46 +251,52 @@ void RandomMode ()
           }
 }
 
+//Initialization sequence
 void InitializeMode()
 {
-  SetLights(ON,ON,ON);
-  delay(1000);
-  SetLights(OFF,OFF,OFF);
-  delay(1000);
-  SetLights(ON,OFF,OFF);
-  delay(1000);
-  SetLights(OFF,ON,OFF);
-  delay(1000);
-  SetLights(OFF,OFF,ON);
-  delay(1000);
-  SetLights(OFF,OFF,OFF);
-  delay(1000);
+    SetLights(ON,ON,ON);
+    delay(1000);
+    SetLights(OFF,OFF,OFF);
+    delay(1000);
+    SetLights(ON,OFF,OFF);
+    delay(1000);
+    SetLights(OFF,ON,OFF);
+    delay(1000);
+    SetLights(OFF,OFF,ON);
+    delay(1000);
+    SetLights(OFF,OFF,OFF);
+    delay(1000);
 }
 
+//Function to output the light commands
 void SetLights( int sR, int sY, int sG)
 {
-	digitalWrite(red_1,sR);
-	digitalWrite(yellow_1,sY);
-	digitalWrite(green_1,sG);  
+    digitalWrite(red_1,sR);
+    digitalWrite(yellow_1,sY);
+    digitalWrite(green_1,sG);  
 }
 
 void SwitchMode()
 {
-  Serial.println("Change");
-  if (modes >= 3) {
-    modes = 0;
-  } else {
-    modes = modes + 1;
-  }
-  state = 1;
-  SetLights(OFF,OFF,OFF);
-  delay(1000);
-  SetLights(ON,ON,ON);
-  delay(1000);
-  SetLights(OFF,OFF,OFF);
-  delay(1000);
-  SetLights(ON,ON,ON);
-  delay(1000);
-  SetLights(OFF,OFF,OFF);
-  delay(1000);
+    Serial.println("Change");
+    if (modes >= 3) {
+        modes = 0;
+    } else {
+        modes = modes + 1;
+    }
+
+    //Reinitialize state to 1 after each mode switch
+    state = 1;
+
+    //Confirmation that the mode has been switched
+    SetLights(OFF,OFF,OFF);
+    delay(1000);
+    SetLights(ON,ON,ON);
+    delay(1000);
+    SetLights(OFF,OFF,OFF);
+    delay(1000);
+    SetLights(ON,ON,ON);
+    delay(1000);
+    SetLights(OFF,OFF,OFF);
+    delay(1000);
 }
