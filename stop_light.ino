@@ -5,16 +5,10 @@
 #define green_1	     5
 #define switchPin    2
 
-// timing definitions in seconds
-// green time for lane 1
-#define GT_1	   30
-
-// yellow to green time, same for  both lanes
-
-
-#define GreenTime       20
-#define YellowTime	 3
-#define RedTime 	20
+// lamp timing
+#define GreenTime   20
+#define YellowTime  3
+#define RedTime     20
 
 // lamp states
 #define INACTIVE_STATE      0
@@ -34,14 +28,20 @@
 
 #define OFF  LOW
 #define ON   HIGH
-int modes = 3;
+
+// intialize controller mode
+int modes = 0;
+// initialize lamp state
 int state = 1;
+// intialize timing parameters
 int nexttime = 1;
+int blinkTime = 1; // blink time for blinking modes
+int RandomLightTiming = 1;
+int delayCounter = 1;
+
 int blinkYellow = ON;
 int blinkRed = ON;
-int RandomLightTiming = 1;
 int RandomState = 1;
-int delayCounter = 1;
 
 int buttonState;             // the current reading from the input pin
 int lastButtonState = LOW;   // the previous reading from the input pin
@@ -178,7 +178,7 @@ void BlinkRedMode()
         SetLights(OFF,OFF,OFF);
         blinkRed = ON;
 	}
-	nexttime = 1;
+	nexttime = blinkTime;
 }
 
 //Blink yellow mode
@@ -191,7 +191,7 @@ void BlinkYellowMode()
         SetLights(OFF,OFF,OFF);
         blinkYellow = ON;
     }
-    nexttime = 1;
+    nexttime = blinkTime;
 }
 
 //Randomly turns on and off lights in pseudo random sequence
