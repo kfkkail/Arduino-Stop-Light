@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 // traffic light controller
 // outputs for traffic lights of lane 1
 #define red_1	     13
@@ -31,6 +33,7 @@
 
 // intialize controller mode
 int modes = 0;
+int powerDownMode = 0;
 // initialize lamp state
 int state = 1;
 // intialize timing parameters
@@ -62,11 +65,21 @@ void setup()
     pinMode(green_1,OUTPUT);
     pinMode(switchPin, INPUT);
 
+    powerDownMode = EEPROM.read(1);
+    Serial.print("Mode");
+    Serial.println(powerDownMode);
+    if (powerDownMode == 255) {
+        modes = 0;
+    } else {
+        modes = powerDownMode;
+    }
+
     //Call initialization mode
     InitializeMode();
 
     //Seed the random number generator
     randomSeed(analogRead(0));
+
 }
 
 void loop()
@@ -284,7 +297,8 @@ void SwitchMode()
     } else {
         modes = modes + 1;
     }
-
+    
+    EEPROM.write(1,modes);
     //Reinitialize state to 1 after each mode switch
     state = 1;
 
